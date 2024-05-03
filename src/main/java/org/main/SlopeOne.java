@@ -79,7 +79,7 @@ public class SlopeOne {
                         double finalValue = predictedValue * freq.get(k).get(j);
                         uPred.put(k, uPred.get(k) + finalValue);
                         uFreq.put(k, uFreq.get(k) + freq.get(k).get(j));
-                    } catch (NullPointerException _) {
+                    } catch (NullPointerException ignored) {
                     }
                 }
             }

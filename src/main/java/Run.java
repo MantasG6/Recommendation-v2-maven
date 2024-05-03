@@ -1,8 +1,8 @@
-import org.ml.examples.Clusterer;
+import org.data.preprocessing.DataMerger;
 
 public class Run {
     public static void main(String[] args) throws Exception {
-        Clusterer clusterer = new Clusterer();
-        clusterer.Clusterize();
+        DataMerger merger = new DataMerger("/MON/", "MONMerged.csv", true);
+        merger.Merge();
     }
 }

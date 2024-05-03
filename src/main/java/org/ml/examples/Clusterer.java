@@ -3,6 +3,7 @@ package org.ml.examples;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -24,20 +25,24 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.JFrame;
 
+@Setter
+@Getter
 @AllArgsConstructor
 public class Clusterer {
 
     /**
-     * Random numbers seed to keep the results consistent
-     * {@code default = 10}
+     * Random numbers seed to keep the results consistent {@code default = 10}
      */
-    @Getter @Setter
     int seed;
 
-    @Getter @Setter
+    /**
+     * Choose to preserve or randomize instances order {@code default = true}
+     */
     boolean preserveInstancesOrder;
 
-    @Getter @Setter
+    /**
+     * Choose number of clusters {@code default = 3}
+     */
     int numClusters;
 
     /**
@@ -51,7 +56,7 @@ public class Clusterer {
 
     /**
      * Clusterize data in chosen amount of clusters
-     * @throws Exception data or Weka KMeans exceptions
+     * @throws Exception If provided path does not meet {@link java.net.URI} requirements or provided wrong K value
      */
     public void Clusterize() throws Exception {
         Instances data = getData("/data_sample.arff");
@@ -68,7 +73,7 @@ public class Clusterer {
      * @param data data to clusterize
      * @param lengthK amount of K values to check
      * @param visualize results visualization
-     * @throws Exception SimpleKMeans exception for wrong values of K
+     * @throws Exception If wrong K value is provided
      */
     private void findOptimalK(Instances data, int lengthK, boolean visualize) throws Exception {
 
@@ -128,7 +133,7 @@ public class Clusterer {
      * @param centers list of instances
      * @return minimum distance
      */
-    private double minEuclideanDistance(Instance point, Instances centers) {
+    private double minEuclideanDistance(Instance point, @NotNull Instances centers) {
         double minDistance = Double.MAX_VALUE;
         for (Instance center : centers) {
             double distance = 0.0;
@@ -148,9 +153,10 @@ public class Clusterer {
      * Get data in correct format for Weka
      * @param filename path to file
      * @return data in Instances format
-     * @throws IOException IO exception for the provided path
-     * @throws URISyntaxException URI exception for the provided path
+     * @throws IOException If provided path is wrong or does not exist
+     * @throws URISyntaxException If provided path does not meet {@link java.net.URI} requirements
      */
+    @NotNull
     private Instances getData(String filename) throws IOException, URISyntaxException {
         File file = new File(Objects.requireNonNull(Clusterer.class.getResource(filename)).toURI());
         BufferedReader inputReader = new BufferedReader(new FileReader(file));

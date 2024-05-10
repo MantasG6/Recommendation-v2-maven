@@ -6,7 +6,9 @@ import lombok.Setter;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -109,6 +111,32 @@ public class DataFilter {
                 pw.println(line);
             }
             line = br.readLine();
+        }
+        pw.close();
+    }
+
+    public void AggregateData(Integer indexMSISDN, Integer indexAllowance) throws IOException {
+        Map<String, Integer> aggregatedData = new HashMap<>();
+        BufferedReader br = new BufferedReader(new FileReader(getFile(inputFileName)));
+        PrintWriter pw = new PrintWriter(outputFileName);
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineSplit = line.split(Pattern.quote(delimiter));
+            String MSISDN = lineSplit[indexMSISDN];
+            Integer allowance = lineSplit.length <= indexAllowance ||
+                    lineSplit[indexAllowance].isEmpty() ?
+                    0 : Integer.parseInt(lineSplit[indexAllowance]);
+            // Update aggregated data
+            if (aggregatedData.containsKey(MSISDN)) {
+                aggregatedData.compute(MSISDN, (k, currentAllowance) -> currentAllowance + allowance);
+            } else {
+                aggregatedData.put(MSISDN, allowance);
+            }
+            line = br.readLine();
+        }
+        // Output aggregated data
+        for (Map.Entry<String, Integer> entry : aggregatedData.entrySet()) {
+            pw.println(entry.getKey() + delimiter + entry.getValue());
         }
         pw.close();
     }

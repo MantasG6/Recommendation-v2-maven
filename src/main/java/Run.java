@@ -8,7 +8,7 @@ import java.util.Arrays;
 public class Run {
     public static void main(String[] args) throws Exception {
         DataFilter roFilter = new DataFilter("RoFiltered_2.csv", "RoAggregated.csv", "|");
-        roFilter.AggregateData(1, 4);
+        roFilter.AggregateData(0, 1, 4, 5);
     }
 
     public static void DataPreprocessing() throws URISyntaxException, IOException {
@@ -28,6 +28,6 @@ public class Run {
         roFilter.FilterSuccess(3);
         roFilter.setInputFileName("RoFiltered_2.csv");
         roFilter.setOutputFileName("RoAggregated.csv");
-        roFilter.AggregateData(1, 4);
+        roFilter.AggregateData(0, 1, 4, 5);
     }
 }

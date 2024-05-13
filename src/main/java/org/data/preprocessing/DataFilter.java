@@ -3,12 +3,10 @@ package org.data.preprocessing;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.main.RoRecord;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -115,28 +113,42 @@ public class DataFilter {
         pw.close();
     }
 
-    public void AggregateData(Integer indexMSISDN, Integer indexAllowance) throws IOException {
-        Map<String, Integer> aggregatedData = new HashMap<>();
+    public void AggregateData(Integer indexRT, Integer indexMSISDN,
+                              Integer indexAllowance, Integer indexCash) throws IOException {
+        HashSet<RoRecord> aggregatedData = new HashSet<>();
         BufferedReader br = new BufferedReader(new FileReader(getFile(inputFileName)));
         PrintWriter pw = new PrintWriter(outputFileName);
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
+            Integer RT = Integer.valueOf(lineSplit[indexRT]);
             String MSISDN = lineSplit[indexMSISDN];
-            Integer allowance = lineSplit.length <= indexAllowance ||
+
+            // Create a new empty RoRecord for the MSISDN
+            RoRecord record = new RoRecord(0L, 0L, 0L, 0L, MSISDN);
+
+            // Set usage
+            long allowance = lineSplit.length <= indexAllowance ||
                     lineSplit[indexAllowance].isEmpty() ?
-                    0 : Integer.parseInt(lineSplit[indexAllowance]);
+                    0 : Long.parseLong(lineSplit[indexAllowance]);
+            long cash = lineSplit.length <= indexCash ||
+                    lineSplit[indexCash].isEmpty() ?
+                    0 : Long.parseLong(lineSplit[indexCash]);
+            long usage = RT == 5 ? allowance : cash;
+
+
             // Update aggregated data
-            if (aggregatedData.containsKey(MSISDN)) {
-                aggregatedData.compute(MSISDN, (k, currentAllowance) -> currentAllowance + allowance);
+            if (aggregatedData.contains(record)) {
+                record.appendUsage(RT, usage);
             } else {
-                aggregatedData.put(MSISDN, allowance);
+                record.setUsage(RT, usage);
+                aggregatedData.add(record);
             }
             line = br.readLine();
         }
         // Output aggregated data
-        for (Map.Entry<String, Integer> entry : aggregatedData.entrySet()) {
-            pw.println(entry.getKey() + delimiter + entry.getValue());
+        for (RoRecord r : aggregatedData) {
+            pw.println(r.toString());
         }
         pw.close();
     }

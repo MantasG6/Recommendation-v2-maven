@@ -34,7 +34,7 @@ public class DataMerger {
     Boolean containsHeader;
 
     /**
-     * Main function that merges all the files
+     * Merge all the files in a provided directory
      * @throws URISyntaxException If provided path does not meet {@link java.net.URI} requirements
      * @throws IOException If file in the directory is not found or file cannot be read
      */

@@ -11,6 +11,11 @@ public class Run {
         roFilter.AggregateData(0, 1, 4, 5);
     }
 
+    /**
+     * Preprocess data for model learning
+     * @throws URISyntaxException If provided path for merger does not meet {@link java.net.URI} requirements
+     * @throws IOException If opening or reading the input file fails
+     */
     public static void DataPreprocessing() throws URISyntaxException, IOException {
         DataMerger merger = new DataMerger("/MON/", "MONMerged.csv", true);
         merger.Merge();

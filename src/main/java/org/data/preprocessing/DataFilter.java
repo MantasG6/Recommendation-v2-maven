@@ -53,7 +53,7 @@ public class DataFilter {
     }
 
     /**
-     * Constructor pointing to output file and setting delimiter to default (,)
+     * Constructor pointing output file to resources and setting delimiter to default (,)
      * @param inputFileName Name of the input file in Project Resources
      * @param outputFileName Name of output file
      */
@@ -64,7 +64,7 @@ public class DataFilter {
     }
 
     /**
-     * Main method which keeps the required columns and creates a file with filtered columns
+     * Keep the required columns and create a file with filtered columns
      * @param columnsToKeep Columns to keep
      * @throws IOException If opening or reading the input file fails
      */
@@ -113,6 +113,14 @@ public class DataFilter {
         pw.close();
     }
 
+    /**
+     * Aggregate Ro CDR records and group based on usages
+     * @param indexRT Index of Record Type column
+     * @param indexMSISDN Index of MSISDN column
+     * @param indexAllowance Index of Allowance column
+     * @param indexCash Index of Cash column
+     * @throws IOException If opening or reading the input file fails
+     */
     public void AggregateData(Integer indexRT, Integer indexMSISDN,
                               Integer indexAllowance, Integer indexCash) throws IOException {
         HashSet<RoRecord> aggregatedData = new HashSet<>();

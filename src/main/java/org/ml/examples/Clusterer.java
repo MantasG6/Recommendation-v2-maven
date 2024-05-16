@@ -23,12 +23,22 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import weka.core.converters.CSVLoader;
+
 import javax.swing.JFrame;
 
+/**
+ * Class containing ML methods for KMeans clustering
+ */
 @Setter
 @Getter
 @AllArgsConstructor
 public class Clusterer {
+
+    /**
+     * Input data file name
+     */
+    String inputFileName;
 
     /**
      * Random numbers seed to keep the results consistent {@code default = 10}
@@ -46,9 +56,15 @@ public class Clusterer {
     int numClusters;
 
     /**
+     * Assigned classes to each row of input data
+     */
+    int[] assignments;
+
+    /**
      * Constructs a new Clusterer with default values
      */
-    public Clusterer() {
+    public Clusterer(String inputFileName) {
+        this.inputFileName = inputFileName;
         this.seed = 10;
         this.preserveInstancesOrder = true;
         this.numClusters = 3;
@@ -59,23 +75,23 @@ public class Clusterer {
      * @throws Exception If provided path does not meet {@link java.net.URI} requirements or provided wrong K value
      */
     public void Clusterize() throws Exception {
-        Instances data = getData("/data_sample.arff");
-        System.out.println(data.numInstances() + " Number of instances");
-        Instances dataTrim = new Instances(data, 1000);
-        for (int i = 0; i < 10000; i++) {
-            dataTrim.add(data.get(i));
-        }
-        findOptimalK(dataTrim, 20, true);
+        Instances data = getData(this.inputFileName);
+        SimpleKMeans kMeans = new SimpleKMeans();
+        kMeans.setSeed(this.seed);
+        kMeans.setPreserveInstancesOrder(this.preserveInstancesOrder);
+        kMeans.setNumClusters(this.numClusters);
+        kMeans.buildClusterer(data);
+        assignments = kMeans.getAssignments();
     }
 
     /**
      * Finds and displays optimal K value for KMeans clusterization method using distortion elbow method
-     * @param data data to clusterize
      * @param lengthK amount of K values to check
      * @param visualize results visualization
      * @throws Exception If wrong K value is provided
      */
-    private void findOptimalK(Instances data, int lengthK, boolean visualize) throws Exception {
+    public void findOptimalK(int lengthK, boolean visualize) throws Exception {
+        Instances data = getData(this.inputFileName);
 
         HashMap<Integer, Double> distortions = new HashMap<>();
 
@@ -154,15 +170,11 @@ public class Clusterer {
      * @param filename path to file
      * @return data in Instances format
      * @throws IOException If provided path is wrong or does not exist
-     * @throws URISyntaxException If provided path does not meet {@link java.net.URI} requirements
      */
-    @NotNull
-    private Instances getData(String filename) throws IOException, URISyntaxException {
-        File file = new File(Objects.requireNonNull(Clusterer.class.getResource(filename)).toURI());
-        BufferedReader inputReader = new BufferedReader(new FileReader(file));
-        Instances instances = new Instances(inputReader);
-        inputReader.close();
-        return instances;
+    private Instances getData(String filename) throws IOException {
+        CSVLoader loader = new CSVLoader();
+        loader.setSource(new File("src/main/resources/" + filename));
+        return loader.getDataSet();
     }
 
 }

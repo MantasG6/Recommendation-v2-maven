@@ -31,7 +31,18 @@ public class DataFilter {
      * Delimiter that separates columns in input and output files, default is comma (,)
      */
     String delimiter;
+    /**
+     * Header for new files (empty by default)
+     */
+    String header;
 
+    /**
+     * InputFileName Setter pointing to Project Resources
+     * @param fileName Input file name
+     */
+    public void setInputFileName(String fileName) {
+        this.inputFileName = "src/main/resources/" + fileName;
+    }
     /**
      * OutputFileName Setter pointing to Project Resources
      * @param fileName Output file name
@@ -50,6 +61,7 @@ public class DataFilter {
         this.inputFileName = inputFileName;
         this.outputFileName = "src/main/resources/" + outputFileName;
         this.delimiter = delimiter;
+        this.header = "";
     }
 
     /**
@@ -61,6 +73,7 @@ public class DataFilter {
         this.inputFileName = inputFileName;
         this.outputFileName = "src/main/resources/" + outputFileName;
         this.delimiter = ",";
+        this.header = "";
     }
 
     /**
@@ -69,9 +82,9 @@ public class DataFilter {
      * @throws IOException If opening or reading the input file fails
      */
     public void FilterColumns(List<Integer> columnsToKeep) throws IOException {
-
-        BufferedReader br = new BufferedReader(new FileReader(getFile(inputFileName)));
+        BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
+        pw.println(header);
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -86,22 +99,14 @@ public class DataFilter {
     }
 
     /**
-     * Get File object from project resources with provided name
-     * @param fileName File name in project resources
-     * @return {@link java.io.File} object
-     */
-    File getFile(String fileName) {
-        return new File("src/main/resources/" + fileName);
-    }
-
-    /**
      * Filter data with success (2001) result code
      * @param indexRC Index of result code column
      * @throws IOException If opening or reading the input file fails
      */
     public void FilterSuccess(Integer indexRC) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(getFile(inputFileName)));
+        BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
+        pw.println(header);
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -114,18 +119,39 @@ public class DataFilter {
     }
 
     /**
+     * Filter data for only voice and sms usage records
+     * @param indexRT Record Type
+     * @throws IOException If opening or reading the input file fails
+     */
+    public void FilterVoiceSMS(Integer indexRT) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+        PrintWriter pw = new PrintWriter(outputFileName);
+        pw.println(header);
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineSplit = line.split(Pattern.quote(delimiter));
+            if (lineSplit[indexRT].matches("[23]")) {
+                pw.println(line);
+            }
+            line = br.readLine();
+        }
+        pw.close();
+    }
+
+    /**
      * Aggregate Ro CDR records and group based on usages
      * @param indexRT Index of Record Type column
      * @param indexMSISDN Index of MSISDN column
-     * @param indexAllowance Index of Allowance column
-     * @param indexCash Index of Cash column
+     * @param indexVoice Index of voice usage column
+     * @param indexSMS Index of SMS usage column
      * @throws IOException If opening or reading the input file fails
      */
     public void AggregateData(Integer indexRT, Integer indexMSISDN,
-                              Integer indexAllowance, Integer indexCash) throws IOException {
+                              Integer indexVoice, Integer indexSMS) throws IOException {
         HashSet<RoRecord> aggregatedData = new HashSet<>();
-        BufferedReader br = new BufferedReader(new FileReader(getFile(inputFileName)));
+        BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
+        pw.println(header);
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -136,14 +162,7 @@ public class DataFilter {
             RoRecord record = new RoRecord(0L, 0L, 0L, 0L, MSISDN);
 
             // Set usage
-            long allowance = lineSplit.length <= indexAllowance ||
-                    lineSplit[indexAllowance].isEmpty() ?
-                    0 : Long.parseLong(lineSplit[indexAllowance]);
-            long cash = lineSplit.length <= indexCash ||
-                    lineSplit[indexCash].isEmpty() ?
-                    0 : Long.parseLong(lineSplit[indexCash]);
-            long usage = RT == 5 ? allowance : cash;
-
+            long usage = usage(RT, lineSplit, indexVoice, indexSMS);
 
             // Update aggregated data
             if (aggregatedData.contains(record)) {
@@ -159,5 +178,28 @@ public class DataFilter {
             pw.println(r.toString());
         }
         pw.close();
+    }
+
+    /**
+     * Find usage based on RT
+     * @param RT Record Type
+     * @param recordData Record data
+     * @param indexVoice Index of voice usage column
+     * @param indexSMS Index of SMS usage column
+     * @return Usage based on RT
+     */
+    private long usage(Integer RT, String[] recordData, Integer indexVoice, Integer indexSMS) {
+        switch (RT) {
+            case 2:
+                return recordData.length <= indexVoice ||
+                    recordData[indexVoice].isEmpty() ?
+                    0L : Long.parseLong(recordData[indexVoice]);
+            case 3:
+                return recordData.length <= indexSMS ||
+                        recordData[indexSMS].isEmpty() ?
+                        0L : Long.parseLong(recordData[indexSMS]);
+            default:
+                return 0L;
+        }
     }
 }

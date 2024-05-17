@@ -10,7 +10,8 @@ import java.util.Arrays;
 public class Run {
     public static void main(String[] args) throws Exception {
 //        DataPreprocessing();
-//        GetAssignments();
+//        FindOptimalK();
+        GetAssignments();
         DataPostprocessing();
     }
 
@@ -29,25 +30,33 @@ public class Run {
 //        merger.setOutputFilePath("RoMerged.csv");
 //        merger.setContainsHeader(false);
 //        merger.Merge();
-//        DataFilter roFilter = new DataFilter("RoMerged.csv", "RoFiltered_1.csv", "|");
-//        roFilter.FilterColumns(Arrays.asList(46, 0, 6, 26, 43));
-//        roFilter.setInputFileName("RoFiltered_1.csv");
-//        roFilter.setOutputFileName("RoFiltered_2.csv");
-//        roFilter.FilterSuccess(0);
-//        roFilter.setInputFileName("RoFiltered_2.csv");
-//        roFilter.setOutputFileName("RoFiltered_3.csv");
-//        roFilter.FilterVoiceSMS(1);
-//        roFilter.setInputFileName("RoFiltered_3.csv");
-//        roFilter.setOutputFileName("RoAggregated.csv");
-        DataFilter roFilter = new DataFilter("RoAggregated.csv", "RoFinal.csv", ",");
-        roFilter.setHeader("Voice,SMS");
-        roFilter.FilterColumns(Arrays.asList(1,2));
+        DataFilter roFilter = new DataFilter("RoMerged.csv", "RoFiltered_1.csv", "|");
+        roFilter.FilterColumns(Arrays.asList(46, 0, 6, 26, 43, 33));
+        roFilter.setInputFileName("RoFiltered_1.csv");
+        roFilter.setOutputFileName("RoFiltered_2.csv");
+        roFilter.FilterSuccess(0);
+        roFilter.setInputFileName("RoFiltered_2.csv");
+        roFilter.setOutputFileName("RoFiltered_3.csv");
+        roFilter.FilterVoiceSMS(1);
+        roFilter.setInputFileName("RoFiltered_2.csv");
+        roFilter.setOutputFileName("RoAggregated.csv");
+        roFilter.AggregateData(1,2,3,4, 5);
+//        DataFilter roFilter = new DataFilter("RoAggregated.csv", "RoFinal.csv", ",");
+        roFilter.setInputFileName("RoAggregated.csv");
+        roFilter.setOutputFileName("RoFinal.csv");
+        roFilter.setDelimiter(",");
+        roFilter.setHeader("Voice,SMS,Cash");
+        roFilter.FilterColumns(Arrays.asList(1,2,3));
+    }
+
+    public static void FindOptimalK() throws Exception {
+        Clusterer clusterer = new Clusterer("RoFinal.csv");
+        clusterer.findOptimalK(10, true);
     }
 
     public static void GetAssignments() throws Exception {
         Clusterer clusterer = new Clusterer("RoFinal.csv");
-//        clusterer.findOptimalK(10, true);
-        // optimal K value found (3), leave default
+        clusterer.setNumClusters(4);
         clusterer.Clusterize();
         int[] assignments = clusterer.getAssignments();
         PrintWriter pw = new PrintWriter("src/main/resources/assignments.csv");
@@ -58,10 +67,17 @@ public class Run {
     }
 
     public static void DataPostprocessing() throws IOException {
-//        Postprocessor postprocessor = new Postprocessor("RoAggregated.csv", "RoGrouped.csv", false);
-//        postprocessor.setOutputHeader("MSISDN,VoiceUsage,SMSUsage,Group");
-//        postprocessor.AssignData("assignments.csv");
-        Postprocessor postprocessor = new Postprocessor("RoGrouped.csv", "RoResult.csv", true);
-        postprocessor.FindAverages(Arrays.asList(1, 2));
+        Postprocessor postprocessor = new Postprocessor("RoAggregated.csv", "RoGrouped.csv", false);
+        postprocessor.setOutputHeader("MSISDN,VoiceUsage,SMSUsage,CashUsage,Group");
+        postprocessor.AssignData("assignments.csv");
+//        Postprocessor postprocessor = new Postprocessor("RoGrouped.csv", "RoResult.csv", true);
+        postprocessor.setInputFileName("RoGrouped.csv");
+        postprocessor.setOutputFileName("RoAverages.csv");
+        postprocessor.setInputHeader(true);
+        postprocessor.FindAverages(Arrays.asList(1, 2, 3));
+        postprocessor.setOutputFileName("RoMax.csv");
+        postprocessor.FindMinMax(Arrays.asList(1, 2, 3), 1);
+        postprocessor.setOutputFileName("RoMin.csv");
+        postprocessor.FindMinMax(Arrays.asList(1, 2, 3), 0);
     }
 }

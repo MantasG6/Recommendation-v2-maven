@@ -29,11 +29,11 @@ public class Postprocessor {
      */
     Boolean inputHeader;
     /**
-     * Header to include in first line of output file (empty by default)
+     * Header to include in first line of output file {@code default = ""}
      */
     String outputHeader;
     /**
-     * Delimiter that separates columns in input and output files, default is comma (,)
+     * Delimiter that separates columns in input and output files {@code default = ","}
      */
     String delimiter;
 
@@ -56,8 +56,8 @@ public class Postprocessor {
     /**
      * Constructor pointing files to Project Resources
      * @param inputFileName Name of an input file
-     * @param assignmentsFileName Name of a file with assigned groups for each input line
      * @param outputFileName Name of an input file labeled with groups
+     * @param inputHeader {@code TRUE} if input contains header in the first line
      */
     public Postprocessor(String inputFileName, String outputFileName, boolean inputHeader) {
         this.inputFileName = "src/main/resources/" + inputFileName;
@@ -141,25 +141,78 @@ public class Postprocessor {
                     .collect(Collectors.toList());
             groups.put(key, avgFeatures);
         }
-        printTable(groups, featureNames);
-        printFile(groups, featureNames);
+        printTable(groups, featureNames, "Avg");
+        printFile(groups, featureNames, "Avg");
+    }
+
+    /**
+     * Find minimum or maximum values of selected features for each group
+     * @param columnsToMinMax Columns of numerical features
+     * @param identifier {@code 0} to find minimum values, {@code 1} to find maximum values
+     * @throws IOException If opening or reading the input file fails
+     */
+    public void FindMinMax(List<Integer> columnsToMinMax, Integer identifier) throws IOException {
+        String statName = identifier == 0 ? "Min" : "Max";
+        BufferedReader br = new BufferedReader(new FileReader(this.inputFileName));
+        List<String> featureNames = new ArrayList<>();
+        // skip input header and save for output
+        if (this.inputHeader) {
+            String header = br.readLine();
+            String[] headerSplit = header.split(Pattern.quote(delimiter));
+            for (Integer column : columnsToMinMax) {
+                featureNames.add(headerSplit[column]);
+            }
+        }
+        String line = br.readLine();
+        HashMap<Integer, List<Long>> groups = new HashMap<>();
+        while (line != null) {
+            List<Long> features = new ArrayList<>();
+            String[] lineSplit = line.split(Pattern.quote(delimiter));
+            int group = Integer.parseInt(lineSplit[lineSplit.length-1]);
+            for (Integer column : columnsToMinMax) {
+                features.add(Long.parseLong(lineSplit[column]));
+            }
+            if (groups.containsKey(group)) {
+                List<Long> maxFeatures = IntStream.range(0, features.size())
+                        .mapToObj(i ->
+                        {
+                            if (identifier == 0) {
+                                return Math.min(groups.get(group).get(i), features.get(i));
+                            } else {
+                                return Math.max(groups.get(group).get(i), features.get(i));
+                            }
+                        })
+                        .collect(Collectors.toList());
+                groups.put(group, maxFeatures);
+            } else {
+                groups.put(group, features);
+            }
+            line = br.readLine();
+        }
+        printTable(groups, featureNames, statName);
+        printFile(groups, featureNames, statName);
     }
 
     /**
      * Print results to output as a table
      * @param map Groups and features mapped
      * @param header Feature names
+     * @param statName Statistic name
      */
-    private void printTable(HashMap<Integer, List<Double>> map, List<String> header) {
+    private void printTable(HashMap<Integer, ? extends  List<? extends Number>> map, List<String> header, String statName) {
         System.out.printf("| %-5s |", "GROUP");
         for (String featureName : header) {
-            System.out.printf(" %-20s |", featureName + " Average");
+            System.out.printf(" %-20s |", featureName + " " + statName);
         }
         System.out.printf("%n");
-        for (Map.Entry<Integer, List<Double>> entry : map.entrySet()) {
+        for (Map.Entry<Integer,? extends List<? extends Number>> entry : map.entrySet()) {
             System.out.printf("| %5d |", entry.getKey());
-            for (Double feature : entry.getValue()) {
-                System.out.printf(" %20.2f |", feature);
+            for (Number feature : entry.getValue()) {
+                if (feature instanceof Double) {
+                    System.out.printf(" %20.5f |", feature);
+                } else if (feature instanceof Long){
+                    System.out.printf(" %20d |", feature);
+                }
             }
             System.out.printf("%n");
         }
@@ -169,19 +222,24 @@ public class Postprocessor {
      * Print results to a file as a table
      * @param map Groups and features mapped
      * @param header Feature names
+     * @param statName Statistic name
      * @throws FileNotFoundException If the output file is not found
      */
-    private void printFile(HashMap<Integer, List<Double>> map, List<String> header) throws FileNotFoundException {
+    private void printFile(HashMap<Integer, ? extends  List<? extends Number>> map, List<String> header, String statName) throws FileNotFoundException {
         PrintWriter pw = new PrintWriter(this.outputFileName);
         pw.printf("| %-5s |", "GROUP");
         for (String featureName : header) {
-            pw.printf(" %-20s |", featureName + " Average");
+            pw.printf(" %-20s |", featureName + " " + statName);
         }
         pw.printf("%n");
-        for (Map.Entry<Integer, List<Double>> entry : map.entrySet()) {
+        for (Map.Entry<Integer,? extends List<? extends Number>> entry : map.entrySet()) {
             pw.printf("| %5d |", entry.getKey());
-            for (Double feature : entry.getValue()) {
-                pw.printf(" %20.2f |", feature);
+            for (Number feature : entry.getValue()) {
+                if (feature instanceof Double) {
+                    pw.printf(" %20.5f |", feature);
+                } else if (feature instanceof Long){
+                    pw.printf(" %20d |", feature);
+                }
             }
             pw.printf("%n");
         }

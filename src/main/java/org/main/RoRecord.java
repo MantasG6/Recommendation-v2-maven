@@ -101,27 +101,15 @@ public class RoRecord {
     }
 
     /**
-     * Method to output data as a string in a required format for ML
-     * @return String representing a single Ro Record Usage
-     */
-//    @Override
-//    public String toString() {
-//        return  MSISDN + delimiter +
-//                dataUsage + delimiter +
-//                voiceUsage + delimiter +
-//                smsUsage + delimiter +
-//                cashUsage;
-//    }
-
-    /**
-     * Temporary toString for no cash no data trials
+     * Method to output data as a string in a required format for Machine Learning
      * @return String representing a single Ro Record Usage
      */
     @Override
     public String toString() {
         return  MSISDN + delimiter +
                 voiceUsage + delimiter +
-                smsUsage;
+                smsUsage + delimiter +
+                cashUsage;
     }
 
     /**

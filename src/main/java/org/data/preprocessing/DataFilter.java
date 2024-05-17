@@ -28,11 +28,11 @@ public class DataFilter {
      */
     String outputFileName;
     /**
-     * Delimiter that separates columns in input and output files, default is comma (,)
+     * Delimiter that separates columns in input and output files {@code default = ","}
      */
     String delimiter;
     /**
-     * Header for new files (empty by default)
+     * Header for new files {@code default = ""}
      */
     String header;
 
@@ -58,7 +58,7 @@ public class DataFilter {
      * @param delimiter Delimiter that separates columns in input and output files
      */
     public DataFilter(String inputFileName, String outputFileName, String delimiter) {
-        this.inputFileName = inputFileName;
+        this.inputFileName = "src/main/resources/" + inputFileName;
         this.outputFileName = "src/main/resources/" + outputFileName;
         this.delimiter = delimiter;
         this.header = "";
@@ -70,7 +70,7 @@ public class DataFilter {
      * @param outputFileName Name of output file
      */
     public DataFilter(String inputFileName, String outputFileName) {
-        this.inputFileName = inputFileName;
+        this.inputFileName = "src/main/resources/" + inputFileName;
         this.outputFileName = "src/main/resources/" + outputFileName;
         this.delimiter = ",";
         this.header = "";
@@ -84,7 +84,9 @@ public class DataFilter {
     public void FilterColumns(List<Integer> columnsToKeep) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
-        pw.println(header);
+        if (!header.isEmpty()) {
+            pw.println(header);
+        }
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -106,7 +108,9 @@ public class DataFilter {
     public void FilterSuccess(Integer indexRC) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
-        pw.println(header);
+        if (!header.isEmpty()) {
+            pw.println(header);
+        }
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -126,7 +130,9 @@ public class DataFilter {
     public void FilterVoiceSMS(Integer indexRT) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
-        pw.println(header);
+        if (!header.isEmpty()) {
+            pw.println(header);
+        }
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -147,11 +153,13 @@ public class DataFilter {
      * @throws IOException If opening or reading the input file fails
      */
     public void AggregateData(Integer indexRT, Integer indexMSISDN,
-                              Integer indexVoice, Integer indexSMS) throws IOException {
+                              Integer indexVoice, Integer indexSMS, Integer indexCash) throws IOException {
         HashSet<RoRecord> aggregatedData = new HashSet<>();
         BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
-        pw.println(header);
+        if (!header.isEmpty()) {
+            pw.println(header);
+        }
         String line = br.readLine();
         while (line != null) {
             String[] lineSplit = line.split(Pattern.quote(delimiter));
@@ -162,7 +170,7 @@ public class DataFilter {
             RoRecord record = new RoRecord(0L, 0L, 0L, 0L, MSISDN);
 
             // Set usage
-            long usage = usage(RT, lineSplit, indexVoice, indexSMS);
+            long usage = usage(RT, lineSplit, indexVoice, indexSMS, indexCash);
 
             // Update aggregated data
             if (aggregatedData.contains(record)) {
@@ -188,7 +196,7 @@ public class DataFilter {
      * @param indexSMS Index of SMS usage column
      * @return Usage based on RT
      */
-    private long usage(Integer RT, String[] recordData, Integer indexVoice, Integer indexSMS) {
+    private long usage(Integer RT, String[] recordData, Integer indexVoice, Integer indexSMS, Integer indexCash) {
         switch (RT) {
             case 2:
                 return recordData.length <= indexVoice ||
@@ -198,8 +206,22 @@ public class DataFilter {
                 return recordData.length <= indexSMS ||
                         recordData[indexSMS].isEmpty() ?
                         0L : Long.parseLong(recordData[indexSMS]);
+            case 5:
+                return recordData.length <= indexCash ||
+                        recordData[indexCash].isEmpty() ?
+                        0L : roundCash(recordData[indexCash]);
             default:
                 return 0L;
         }
+    }
+
+    /**
+     * Round the cash feature value
+     * @param input Cash feature value
+     * @return Rounded cash feature value
+     */
+    private long roundCash(String input) {
+        double preRounded = Double.parseDouble(input);
+        return Math.round(preRounded);
     }
 }

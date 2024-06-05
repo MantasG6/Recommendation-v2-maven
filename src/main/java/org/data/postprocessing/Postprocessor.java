@@ -193,6 +193,33 @@ public class Postprocessor {
         printFile(groups, featureNames, statName);
     }
 
+    public void FindAmounts() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(this.inputFileName));
+        List<String> featureNames = List.of("Records");
+        // skip input header
+        if (this.inputHeader) {
+            br.readLine();
+        }
+        String line = br.readLine();
+        HashMap<Integer, List<Integer>> groups = new HashMap<>();
+        while (line != null) {
+            List<Integer> features = new ArrayList<>();
+            String[] lineSplit = line.split(Pattern.quote(delimiter));
+            int group = Integer.parseInt(lineSplit[lineSplit.length-1]);
+            if (groups.containsKey(group)) {
+                int count = groups.get(group).get(0) + 1;
+                features.add(count);
+                groups.put(group, features);
+            } else {
+                features.add(1);
+                groups.put(group, features);
+            }
+            line = br.readLine();
+        }
+        printTable(groups, featureNames, "Amount");
+        printFile(groups, featureNames, "Amount");
+    }
+
     /**
      * Print results to output as a table
      * @param map Groups and features mapped
@@ -210,7 +237,9 @@ public class Postprocessor {
             for (Number feature : entry.getValue()) {
                 if (feature instanceof Double) {
                     System.out.printf(" %20.5f |", feature);
-                } else if (feature instanceof Long){
+                } else if (feature instanceof Long) {
+                    System.out.printf(" %20d |", feature);
+                } else if (feature instanceof Integer) {
                     System.out.printf(" %20d |", feature);
                 }
             }
@@ -238,6 +267,8 @@ public class Postprocessor {
                 if (feature instanceof Double) {
                     pw.printf(" %20.5f |", feature);
                 } else if (feature instanceof Long){
+                    pw.printf(" %20d |", feature);
+                } else if (feature instanceof Integer) {
                     pw.printf(" %20d |", feature);
                 }
             }

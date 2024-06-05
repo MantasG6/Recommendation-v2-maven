@@ -29,7 +29,7 @@ public class DataMerger {
     String outputFilePath;
 
     /**
-     * True if files contain header in the first line
+     * {@code TRUE} if files contain header in the first line
      */
     Boolean containsHeader;
 

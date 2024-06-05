@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.main.RoRecord;
+import org.main.Record;
 
 import java.io.*;
 import java.util.*;
@@ -35,6 +36,10 @@ public class DataFilter {
      * Header for new files {@code default = ""}
      */
     String header;
+    /**
+     * Aggregated data with all usages added up for each subscriber (grouped by MSISDN)
+     */
+    HashMap<String,Record> aggregatedData;
 
     /**
      * InputFileName Setter pointing to Project Resources
@@ -148,13 +153,14 @@ public class DataFilter {
      * Aggregate Ro CDR records and group based on usages
      * @param indexRT Index of Record Type column
      * @param indexMSISDN Index of MSISDN column
-     * @param indexVoice Index of voice usage column
+     * @param indexVoice Index of Voice usage column
      * @param indexSMS Index of SMS usage column
+     * @param indexCash Index of Cash usage column
      * @throws IOException If opening or reading the input file fails
      */
-    public void AggregateData(Integer indexRT, Integer indexMSISDN,
+    public void AggregateRoData(Integer indexRT, Integer indexMSISDN,
                               Integer indexVoice, Integer indexSMS, Integer indexCash) throws IOException {
-        HashSet<RoRecord> aggregatedData = new HashSet<>();
+        aggregatedData = new HashMap<>();
         BufferedReader br = new BufferedReader(new FileReader(inputFileName));
         PrintWriter pw = new PrintWriter(outputFileName);
         if (!header.isEmpty()) {
@@ -166,24 +172,92 @@ public class DataFilter {
             Integer RT = Integer.valueOf(lineSplit[indexRT]);
             String MSISDN = lineSplit[indexMSISDN];
 
-            // Create a new empty RoRecord for the MSISDN
-            RoRecord record = new RoRecord(0L, 0L, 0L, 0L, MSISDN);
+            // Create a new empty Record for the MSISDN
+            Record record = new Record(0L, 0L, 0L, 0L, 0L, MSISDN);
 
             // Set usage
             long usage = usage(RT, lineSplit, indexVoice, indexSMS, indexCash);
 
             // Update aggregated data
-            if (aggregatedData.contains(record)) {
+            if (aggregatedData.containsKey(MSISDN)) {
+                record = aggregatedData.get(MSISDN);
                 record.appendUsage(RT, usage);
+                aggregatedData.put(MSISDN, record);
             } else {
                 record.setUsage(RT, usage);
-                aggregatedData.add(record);
+                aggregatedData.put(MSISDN, record);
             }
             line = br.readLine();
         }
         // Output aggregated data
-        for (RoRecord r : aggregatedData) {
-            pw.println(r.toString());
+        for (Map.Entry<String, Record> entry : aggregatedData.entrySet()) {
+            pw.println(entry.getValue().toString());
+        }
+        pw.close();
+    }
+
+    /**
+     * Add Monthly Purchases data to aggregated and filtered Ro data (requires {@link #AggregateRoData(Integer, Integer, Integer, Integer, Integer) Ro Aggregation} to be executed first)
+     * @param filename File name of filtered MON CDR containing information about monthly purchases
+     * @param indexMSISDN Index of MSISDN column
+     * @param indexMP Index of Monthly Purchases column
+     * @param containsHeader {@code TRUE} if file contains header in the first line
+     * @throws IOException If opening or reading the MON file fails
+     */
+    public void JoinMONData(String filename, Integer indexMSISDN, Integer indexMP, boolean containsHeader) throws IOException {
+        if (aggregatedData == null || aggregatedData.isEmpty()) {
+            System.out.println("Aggregation is required!");
+            return;
+        }
+        BufferedReader br = new BufferedReader(new FileReader("src/main/resources/" + filename));
+        PrintWriter pw = new PrintWriter(outputFileName);
+        if (!header.isEmpty()) {
+            pw.println(header);
+        }
+        // Skip header
+        if (containsHeader) {
+            br.readLine();
+        }
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineSplit = line.split(Pattern.quote(delimiter));
+            String MSISDN = lineSplit[indexMSISDN];
+
+            // Set usage
+            long MP = lineSplit.length <= indexMP ||
+                    lineSplit[indexMP].isEmpty() ?
+                    0L : Long.parseLong(lineSplit[indexMP]);
+
+            // Create a new empty RoRecord for the MSISDN
+            Record record = new Record(0L, 0L, 0L, 0L, MP, MSISDN);
+
+            // Update aggregated data
+            if (aggregatedData.containsKey(MSISDN)) {
+                record = aggregatedData.get(MSISDN);
+                record.setMonthlyPurchases(record.getMonthlyPurchases() + MP);
+                aggregatedData.put(MSISDN, record);
+            } else {
+                aggregatedData.put(MSISDN, record);
+            }
+            line = br.readLine();
+        }
+        // Output joint data
+        for (Map.Entry<String, Record> entry : aggregatedData.entrySet()) {
+            pw.println(entry.getValue().toString());
+        }
+        pw.close();
+    }
+
+    public void FilterZeroUsage() throws FileNotFoundException {
+        if (aggregatedData == null || aggregatedData.isEmpty()) {
+            System.out.println("Aggregation is required!");
+            return;
+        }
+        aggregatedData.values().removeIf(Record::isZeroUsage);
+        PrintWriter pw = new PrintWriter(outputFileName);
+        // Output filtered data
+        for (Map.Entry<String, Record> entry : aggregatedData.entrySet()) {
+            pw.println(entry.getValue().toString());
         }
         pw.close();
     }

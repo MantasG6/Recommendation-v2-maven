@@ -12,7 +12,7 @@ import java.util.Objects;
 @AllArgsConstructor
 @Getter
 @Setter
-public class RoRecord {
+public class Record {
 
     /**
      * MSISDN is the main identifier of the record
@@ -35,6 +35,10 @@ public class RoRecord {
      */
     Long cashUsage;
     /**
+     * Monthly spent cash (in units of input data)
+     */
+    Long monthlyPurchases;
+    /**
      * Delimiter to output data as string
      */
     String delimiter;
@@ -47,11 +51,13 @@ public class RoRecord {
      * @param dataUsage Data usage (in units of input data)
      * @param MSISDN MSISDN is the main identifier of the record
      */
-    public RoRecord(Long cashUsage, Long smsUsage, Long voiceUsage, Long dataUsage, String MSISDN) {
+    public Record(Long cashUsage, Long smsUsage, Long voiceUsage,
+                  Long dataUsage, Long monthlyPurchases, String MSISDN) {
         this.cashUsage = cashUsage;
         this.smsUsage = smsUsage;
         this.voiceUsage = voiceUsage;
         this.dataUsage = dataUsage;
+        this.monthlyPurchases = monthlyPurchases;
         this.MSISDN = MSISDN;
         this.delimiter = ",";
     }
@@ -109,7 +115,8 @@ public class RoRecord {
         return  MSISDN + delimiter +
                 voiceUsage + delimiter +
                 smsUsage + delimiter +
-                cashUsage;
+                cashUsage + delimiter +
+                monthlyPurchases;
     }
 
     /**
@@ -121,8 +128,8 @@ public class RoRecord {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RoRecord roRecord = (RoRecord) o;
-        return Objects.equals(MSISDN, roRecord.MSISDN);
+        Record record = (Record) o;
+        return Objects.equals(MSISDN, record.MSISDN);
     }
 
     /**
@@ -132,5 +139,17 @@ public class RoRecord {
     @Override
     public int hashCode() {
         return Objects.hashCode(MSISDN);
+    }
+
+    /**
+     * Checks if all record usages are equal to {@code 0}
+     * @return {@code TRUE} if all usages are {@code 0}
+     */
+    public boolean isZeroUsage() {
+        return voiceUsage == 0 &&
+                smsUsage == 0 &&
+                cashUsage == 0 &&
+                dataUsage == 0 &&
+                monthlyPurchases == 0;
     }
 }

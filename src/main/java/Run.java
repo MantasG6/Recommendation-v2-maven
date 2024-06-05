@@ -1,4 +1,5 @@
 import org.data.postprocessing.Postprocessor;
+import org.data.preprocessing.CorrelationMatrixHeatmap;
 import org.data.preprocessing.DataFilter;
 import org.ml.examples.Clusterer;
 
@@ -9,10 +10,10 @@ import java.util.Arrays;
 
 public class Run {
     public static void main(String[] args) throws Exception {
-//        DataPreprocessing();
+        DataPreprocessing();
 //        FindOptimalK();
-        GetAssignments();
-        DataPostprocessing();
+//        GetAssignments();
+//        DataPostprocessing();
     }
 
     /**
@@ -30,33 +31,54 @@ public class Run {
 //        merger.setOutputFilePath("RoMerged.csv");
 //        merger.setContainsHeader(false);
 //        merger.Merge();
-        DataFilter roFilter = new DataFilter("RoMerged.csv", "RoFiltered_1.csv", "|");
-        roFilter.FilterColumns(Arrays.asList(46, 0, 6, 26, 43, 33));
-        roFilter.setInputFileName("RoFiltered_1.csv");
-        roFilter.setOutputFileName("RoFiltered_2.csv");
-        roFilter.FilterSuccess(0);
-        roFilter.setInputFileName("RoFiltered_2.csv");
-        roFilter.setOutputFileName("RoFiltered_3.csv");
-        roFilter.FilterVoiceSMS(1);
-        roFilter.setInputFileName("RoFiltered_2.csv");
-        roFilter.setOutputFileName("RoAggregated.csv");
-        roFilter.AggregateData(1,2,3,4, 5);
-//        DataFilter roFilter = new DataFilter("RoAggregated.csv", "RoFinal.csv", ",");
-        roFilter.setInputFileName("RoAggregated.csv");
-        roFilter.setOutputFileName("RoFinal.csv");
-        roFilter.setDelimiter(",");
-        roFilter.setHeader("Voice,SMS,Cash");
-        roFilter.FilterColumns(Arrays.asList(1,2,3));
+        DataFilter filter = new DataFilter("RoMerged.csv", "RoFiltered_1.csv", "|");
+        // Filter RT, MSISDN, Voice, SMS, Cash usage columns
+//        filter.FilterColumns(Arrays.asList(46, 0, 6, 26, 43, 33));
+
+//        filter.setInputFileName("RoFiltered_1.csv");
+//        filter.setOutputFileName("RoFiltered_2.csv");
+//        filter.FilterSuccess(0);
+
+//        filter.setInputFileName("RoFiltered_2.csv");
+//        filter.setOutputFileName("RoAggregated.csv");
+//        filter.AggregateRoData(1,2,3,4,5);
+//
+//        filter.setInputFileName("MONMerged.csv");
+//        filter.setOutputFileName("MONFiltered.csv");
+//        filter.setDelimiter("|");
+//        filter.FilterColumns(Arrays.asList(2, 8));
+//
+//        filter.setOutputFileName("Joint.csv");
+//        filter.JoinMONData("MONFiltered.csv",0,1,true);
+//
+//        filter.setOutputFileName("JointFiltered.csv");
+//        filter.FilterZeroUsage();
+//
+//        filter.setInputFileName("JointFiltered.csv");
+//        filter.setOutputFileName("Final.csv");
+//        filter.setDelimiter(",");
+//        filter.setHeader("Voice,SMS,MonthlyPurchases");
+//        filter.FilterColumns(Arrays.asList(1,2,4));
+
+//        // Check correlation
+//        filter.setInputFileName("Final.csv");
+//        double[][] correlationMatrix = filter.CorrelationMatrix(true, true);
+//        CorrelationMatrixHeatmap heatmap = new CorrelationMatrixHeatmap("Usage correlation heatmap", correlationMatrix);
+//        heatmap.pack();
+//        heatmap.setVisible(true);
+
     }
 
     public static void FindOptimalK() throws Exception {
-        Clusterer clusterer = new Clusterer("RoFinal.csv");
-        clusterer.findOptimalK(10, true);
+        Clusterer clusterer = new Clusterer("Final.csv");
+        clusterer.setStandardize(true);
+        clusterer.findOptimalK(15, true);
     }
 
     public static void GetAssignments() throws Exception {
-        Clusterer clusterer = new Clusterer("RoFinal.csv");
-        clusterer.setNumClusters(4);
+        Clusterer clusterer = new Clusterer("Final.csv");
+        clusterer.setStandardize(true);
+        clusterer.setNumClusters(6);
         clusterer.Clusterize();
         int[] assignments = clusterer.getAssignments();
         PrintWriter pw = new PrintWriter("src/main/resources/assignments.csv");
@@ -67,17 +89,22 @@ public class Run {
     }
 
     public static void DataPostprocessing() throws IOException {
-        Postprocessor postprocessor = new Postprocessor("RoAggregated.csv", "RoGrouped.csv", false);
-        postprocessor.setOutputHeader("MSISDN,VoiceUsage,SMSUsage,CashUsage,Group");
+        Postprocessor postprocessor = new Postprocessor("JointFiltered.csv", "Grouped.csv", false);
+        postprocessor.setOutputHeader("MSISDN,VoiceUsage,SMSUsage,CashUsage,MonthlyPurchases,Group");
         postprocessor.AssignData("assignments.csv");
-//        Postprocessor postprocessor = new Postprocessor("RoGrouped.csv", "RoResult.csv", true);
-        postprocessor.setInputFileName("RoGrouped.csv");
-        postprocessor.setOutputFileName("RoAverages.csv");
+
+        postprocessor.setInputFileName("Grouped.csv");
+        postprocessor.setOutputFileName("Averages.csv");
         postprocessor.setInputHeader(true);
-        postprocessor.FindAverages(Arrays.asList(1, 2, 3));
-        postprocessor.setOutputFileName("RoMax.csv");
-        postprocessor.FindMinMax(Arrays.asList(1, 2, 3), 1);
-        postprocessor.setOutputFileName("RoMin.csv");
-        postprocessor.FindMinMax(Arrays.asList(1, 2, 3), 0);
+        postprocessor.FindAverages(Arrays.asList(1, 2, 3, 4));
+
+        postprocessor.setOutputFileName("Max.csv");
+        postprocessor.FindMinMax(Arrays.asList(1, 2, 3, 4), 1);
+
+        postprocessor.setOutputFileName("Min.csv");
+        postprocessor.FindMinMax(Arrays.asList(1, 2, 3, 4), 0);
+
+        postprocessor.setOutputFileName("Amounts.csv");
+        postprocessor.FindAmounts();
     }
 }

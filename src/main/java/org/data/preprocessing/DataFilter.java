@@ -1,9 +1,10 @@
 package org.data.preprocessing;
 
+import au.com.bytecode.opencsv.CSVReader;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.main.RoRecord;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.main.Record;
 
 import java.io.*;
@@ -297,5 +298,49 @@ public class DataFilter {
     private long roundCash(String input) {
         double preRounded = Double.parseDouble(input);
         return Math.round(preRounded);
+    }
+
+    /**
+     * Find correlation matrix for all columns of the data provided in the input file
+     * @param header {@code TRUE} if the input file contains header
+     * @param print {@code TRUE} to print out the correlation matrix
+     * @return Correlation matrix
+     * @throws IOException If opening or reading the input file fails
+     */
+    public double[][] CorrelationMatrix(boolean header, boolean print) throws IOException {
+        List<double[]> data = new ArrayList<>();
+        // Load the dataset
+        CSVReader reader = new CSVReader(new FileReader(this.inputFileName));
+        String[] nextLine;
+        if (header) {
+            reader.readNext();
+        }
+        while ((nextLine = reader.readNext()) != null) {
+            double[] row = new double[nextLine.length];
+            for (int i = 0; i < nextLine.length; i++) {
+                row[i] = Double.parseDouble(nextLine[i]);
+            }
+            data.add(row);
+        }
+        // Convert List<double[]> to 2D array
+        double[][] dataArray = new double[data.size()][];
+        for (int i = 0; i < data.size(); i++) {
+            dataArray[i] = data.get(i);
+        }
+        // Compute the correlation matrix
+        PearsonsCorrelation correlation = new PearsonsCorrelation(dataArray);
+        double[][] correlationMatrix = correlation.getCorrelationMatrix().getData();
+
+        if (print) {
+            // Print the correlation matrix
+            for (double[] matrix : correlationMatrix) {
+                for (double v : matrix) {
+                    System.out.printf("%10.4f ", v);
+                }
+                System.out.println();
+            }
+        }
+
+        return correlationMatrix;
     }
 }

@@ -7,14 +7,10 @@ import org.jetbrains.annotations.NotNull;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
 import weka.core.Instances;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;

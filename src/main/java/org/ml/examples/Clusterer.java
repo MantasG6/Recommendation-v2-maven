@@ -24,6 +24,8 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import weka.core.converters.CSVLoader;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Standardize;
 
 import javax.swing.JFrame;
 
@@ -61,6 +63,11 @@ public class Clusterer {
     int[] assignments;
 
     /**
+     * Standardize feature values {@code default = false}
+     */
+    boolean standardize;
+
+    /**
      * Constructs a new Clusterer with default values
      */
     public Clusterer(String inputFileName) {
@@ -68,6 +75,7 @@ public class Clusterer {
         this.seed = 10;
         this.preserveInstancesOrder = true;
         this.numClusters = 3;
+        this.standardize = false;
     }
 
     /**
@@ -76,6 +84,13 @@ public class Clusterer {
      */
     public void Clusterize() throws Exception {
         Instances data = getData(this.inputFileName);
+
+        if (this.standardize) {
+            Standardize standardize = new Standardize();
+            standardize.setInputFormat(data);
+            data = Filter.useFilter(data, standardize);
+        }
+
         SimpleKMeans kMeans = new SimpleKMeans();
         kMeans.setSeed(this.seed);
         kMeans.setPreserveInstancesOrder(this.preserveInstancesOrder);
@@ -92,6 +107,12 @@ public class Clusterer {
      */
     public void findOptimalK(int lengthK, boolean visualize) throws Exception {
         Instances data = getData(this.inputFileName);
+
+        if (this.standardize) {
+            Standardize standardize = new Standardize();
+            standardize.setInputFormat(data);
+            data = Filter.useFilter(data, standardize);
+        }
 
         HashMap<Integer, Double> distortions = new HashMap<>();
 
